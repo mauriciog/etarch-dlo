@@ -9,12 +9,18 @@ public class Message {
 	private String source;
 	private String destination;
 	private byte[] payload;
+<<<<<<< HEAD
 	private int vlan;
 	private String sequence;
 	private boolean fragmented;
 	
 	public Message(String source, String destination, int  vlan, byte[] payload){
 		this.label = "FinMessage";
+=======
+	
+	public Message(String source, String destination,byte[] payload){
+		this.label = "M"+((int)(Math.random()*10000));
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 		this.source = source;
 		this.destination = destination;
 		this.payload = payload;
@@ -26,8 +32,13 @@ public class Message {
 	
 	
 
+<<<<<<< HEAD
 	public Message(String label, String source, String destination,int vlan, byte[] payload) {
 		this(source,destination,vlan, payload);
+=======
+	public Message(String label, String source, String destination,byte[] payload) {
+		this(source,destination,payload);
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 		this.label = label;
 	}
 

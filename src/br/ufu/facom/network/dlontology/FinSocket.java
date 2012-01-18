@@ -1,5 +1,10 @@
 package br.ufu.facom.network.dlontology;
+<<<<<<< HEAD
 import java.util.HashMap;
+=======
+import java.util.ArrayList;
+import java.util.List;
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 import java.util.Map;
 
 import br.ufu.facom.network.dlontology.msg.CustomParser;
@@ -25,12 +30,15 @@ public class FinSocket {
 	private int ifIndex = -1;
 	private String ifName = null;
 	
+<<<<<<< HEAD
 	//Campos disprezíveis
 	private byte[] macSrc= "<Messa".getBytes();
 	private byte[] macDest= "ge vl=".getBytes();
 	private byte[] etherType= new byte[]{0x8, (byte)0x80}; //PT_IANA
 	private byte[] getVlanBytes(int vlan){ return new byte[] {(byte)0x81,0x0, (byte)((vlan >> 8) & 0xFF), (byte)vlan}; } //VLAN
 	private int dtsVlanDefault=2;
+=======
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 	//Parser
 	private static OWLParser parser = new CustomParser();
 
@@ -54,15 +62,23 @@ public class FinSocket {
 
 	public boolean open(){
 		this.sock = finOpen();
+<<<<<<< HEAD
 		this.workspaces = new HashMap<String,Integer>();
+=======
+		this.workspaces = new ArrayList<String>();
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 		
 		Map<Integer,String> ifs = getNetIfs();
 		for(Integer index : ifs.keySet()){
 			String name = ifs.get(index); 
 			if(!name.startsWith("lo")){
 				ifIndex = index;
+<<<<<<< HEAD
 				ifName = name;
 				debug("Interface utilizada: "+ifIndex+" - "+ifName);
+=======
+				ifName = name; 
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 			}
 		}
 		
@@ -74,6 +90,7 @@ public class FinSocket {
 	}
 
 	public boolean write(String destin, byte[] msg){
+<<<<<<< HEAD
 		if(workspaces.containsKey(destin) || destin.equals("DTS")){
 			for(Message message : parser.fragmentMessage(this.title,destin.equals("DTS")?dtsVlanDefault:workspaces.get(destin),destin,msg)){
 				if(!write(message))
@@ -83,10 +100,14 @@ public class FinSocket {
 		}else{
 			throw new RuntimeException("Destino invalido!");
 		}
+=======
+		return write(new Message(this.title,destin,msg));
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 	}
 	
 	public boolean write(Message message){
 		if(isOpenned()){
+<<<<<<< HEAD
 			String destin = message.getDestination();
 			
 			if(workspaces.containsKey(destin) || destin.equals("DTS")){
@@ -96,6 +117,24 @@ public class FinSocket {
 			}else{
 				throw new RuntimeException("Workspace invalido!");
 			}
+=======
+			debug("Sending message... "+message.getLabel());
+	
+			byte bytes[] = parser.parse(message);
+			
+			int offset = 0;
+			boolean res = false;
+			while(offset < bytes.length){
+				
+				int len = Math.min(bytes.length - offset, MAX_FRAME_SIZE);
+				
+				res |= finWrite(ifIndex, sock, bytes, offset, len);
+				
+				offset += len;
+			}
+			
+			return res;
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 		}else{
 			throw new RuntimeException("FinSocket não aberto!");
 		}
@@ -118,6 +157,7 @@ public class FinSocket {
 				}else
 					promisc = true;
 	
+<<<<<<< HEAD
 			Message msgObj = null;
 			
 			while(true){
@@ -152,6 +192,38 @@ public class FinSocket {
 					}
 				}else{ // Não é uma mensagem FinLan
 					debug("Non-Finlan message!");
+=======
+			
+			byte bytes[] = new byte[1500000];
+			Message msgObj = null;
+			int offset = 0;
+		
+			while(true){		
+				
+				offset += finRead(sock,bytes,offset,MAX_FRAME_SIZE);
+	
+				if(parser.validStartMessage(bytes)){
+					if(parser.validEndMessage(bytes,offset)){ // Message Complete
+						msgObj = parser.parseMessage(bytes);
+						
+						if(msgObj != null && workspaces.contains(msgObj.getDestination())){
+							debug("Receiving Message... Destin.:"+msgObj.getDestination());
+							return msgObj;
+						}else{
+							if(msgObj == null)
+								debug("Parse Fail!");
+							else
+								debug("Workspace fail : " + msgObj.getDestination());
+							msgObj=null;
+							offset = 0;
+						}
+					}else{
+						//System.out.println("Ending fail");
+					}
+				}else{ // Não é uma mensagem FinLan
+					debug("Non-Finlan message!");
+					offset = 0;
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 				}
 			}
 		}else{
@@ -163,7 +235,11 @@ public class FinSocket {
 	public boolean register(String title){
 		String msg = "<Subscriber rdf:about=\"#Register_"+title+"\"><rdf:type rdf:resource=\"http://www.w3.org/2002/07/owl#Thing\"/><Entity rdf:resource=\"#"+title+"\"/></Subscriber>";
 		
+<<<<<<< HEAD
 		if(write(new Message("","DTS",dtsVlanDefault,msg.getBytes()))){
+=======
+		if(write(new Message("","DTS",msg.getBytes()))){
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 			this.title = title;
 			this.registered = true;
 		
@@ -178,7 +254,11 @@ public class FinSocket {
 		if(registered){
 			String msg = "<Unsubscriber rdf:about=\"#Unregister_"+title+"\"><rdf:type rdf:resource=\"http://www.w3.org/2002/07/owl#Thing\"/><Entity rdf:resource=\"#"+title+"\"/></Unsubscriber>";
 		
+<<<<<<< HEAD
 			write("DTS",msg.getBytes());
+=======
+			write(new Message("","DTS",msg.getBytes()));
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 		
 			this.title = null;
 			this.registered = false;
@@ -192,8 +272,11 @@ public class FinSocket {
 		String msg = "<Join rdf:about=\"#Join_"+title+"_"+workspace+"\"><rdf:type rdf:resource=\"http://www.w3.org/2002/07/owl#Thing\"/><Entity rdf:resource=\"#"+title+"\"/><Workspace rdf:resource=\"#"+workspace+"\"/></Join>";
 		
 		write("DTS",msg.getBytes());
+<<<<<<< HEAD
 
 		//TODO Read result and interpret
+=======
+>>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 		
 		this.workspaces.put(workspace,dtsVlanDefault);
 		
