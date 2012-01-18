@@ -3,13 +3,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
-import com.sun.org.apache.xml.internal.security.utils.Base64;
-
 
 public class CustomParser implements OWLParser{
 	//PatternsMessage
-<<<<<<< HEAD
 	private static final byte[] openTag = "<Message".getBytes();
 	private static final byte[] closeTag = "</Message>".getBytes();
 	
@@ -41,32 +37,10 @@ public class CustomParser implements OWLParser{
 		System.arraycopy(msgPt4, 0, buffer, msgPt1.length + vlanBytes.length + etherType.length + msgPt2.length + msgPt3.length, msgPt4.length);
 
 		return buffer;
-=======
-	private static final Pattern messagePattern = Pattern.compile(
-							"<Message rdf:about=\"#(.*?)\">.*?"+
-							"<Source rdf:resource=\"#(.*?)\"/>"+
-							"<Destination rdf:resource=\"#(.*?)\"/>.*?"+
-							"<Payload rdf:string=\"(.*?)\"/>.*?" +
-							"</Message>",Pattern.DOTALL);
-							
-	private static final byte[] openTag = "<Message".getBytes();
-	private static final byte[] closeTag = "</Message>".getBytes();
-	
-	public byte[] parse(Message message){
-		String msg = "<Message rdf:about=\"#"+message.getLabel()+"\">"+
-			"<rdf:type rdf:resource=\"http://www.w3.org/2002/07/owl#Thing\"/>"+
-			"<Source rdf:resource=\"#"+message.getSource()+"\"/>"+
-			"<Destination rdf:resource=\"#"+message.getDestination()+"\"/>"+
-			"<Payload rdf:string=\""+new String(Base64.encode(message.getPayload()))+"\"/>"+
-		"</Message>";
-		
-		return msg.getBytes();
->>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 	}
 
 	
 	public Message parseMessage(byte[] data){
-<<<<<<< HEAD
 		int indexFound = KPM.indexOf(data,"fragmented=".getBytes(),0);
 		if(indexFound == -1)
 			return null;
@@ -75,14 +49,11 @@ public class CustomParser implements OWLParser{
 		int posFinFrag =  KPM.indexOf(data," sequence=".getBytes(),posInFrag);
 		
 		int posInSeq = posFinFrag + " sequence=".getBytes().length;
-=======
->>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 		
 		int posFinSeq = KPM.indexOf(data,"><rdf:type rdf".getBytes(),posInSeq);
 		if(posFinSeq == -1)
 			return null;
 		
-<<<<<<< HEAD
 		indexFound = KPM.indexOf(data,"<Source rdf:resource=\"#".getBytes(),posFinSeq);
 		if(indexFound == -1)
 			return null;
@@ -207,16 +178,6 @@ public class CustomParser implements OWLParser{
 			list.add(new Message(title, destin, vlan, Arrays.copyOfRange(msg, offset, offset+parcial), true,sequenceActual+"."+(pos++)));
 			
 			offset += parcial;
-=======
-		matcher = messagePattern.matcher(new String(data));
-		if(matcher.find()){
-			try {
-				return new Message(matcher.group(1),matcher.group(2),matcher.group(3),Base64.decode(matcher.group(4).getBytes()));
-			} catch (Exception e) {
-				//System.err.println("Message non-valid...");
-				//e.printStackTrace();
-			}
->>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 		}
 		
 		String seqStr = ""+sequenceActual;
@@ -231,42 +192,5 @@ public class CustomParser implements OWLParser{
 	public static void  main(String...args){
 		System.out.println(" sequence=".getBytes().length);
 	}
-<<<<<<< HEAD
 	
-=======
-
-	@Override
-	public boolean validStartMessage(byte[] bytes) {
-		int sizeOpenTag = openTag.length;
-		int sizeBytes = bytes.length;
-		
-		if(sizeBytes >= sizeOpenTag){
-			for(int i=0; i<sizeOpenTag; i++){
-				if(openTag[i] != bytes[i])
-					return false;
-			}
-			return true;
-		}else
-			return false;
-	}
-
-	@Override
-	public boolean validEndMessage(byte[] bytes,int offset) {
-		int sizeOpenTag = openTag.length;
-		int sizeBytes = offset;
-		int sizeCloseTag = closeTag.length;
-		
-		if(sizeBytes >= (sizeOpenTag + sizeCloseTag)){
-			for(int i=0; i<sizeCloseTag; i++){
-				int indexBytes = sizeBytes - 1 - i;
-				int indexClose = sizeCloseTag - 1 - i;
-
-				if(closeTag[indexClose] != bytes[indexBytes])
-					return false;
-			}
-			return true;
-		}else
-			return false;
-	}
->>>>>>> fb0076293af8b30c1ebec54aa11e973b8d797d60
 }
