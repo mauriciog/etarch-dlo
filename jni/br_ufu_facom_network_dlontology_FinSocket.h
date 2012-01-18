@@ -31,7 +31,7 @@ JNIEXPORT jboolean JNICALL Java_br_ufu_facom_network_dlontology_FinSocket_finClo
  * Signature: (I[BII)Z
  */
 JNIEXPORT jboolean JNICALL Java_br_ufu_facom_network_dlontology_FinSocket_finWrite
-  (JNIEnv *, jobject, jint, jbyteArray, jint, jint);
+  (JNIEnv *, jobject, jint, jint, jbyteArray, jint, jint);
 
 /*
  * Class:     br_ufu_facom_network_dlontology_FinSocket
@@ -47,7 +47,15 @@ JNIEXPORT jint JNICALL Java_br_ufu_facom_network_dlontology_FinSocket_finRead
  * Signature: (I)Z
  */
 JNIEXPORT jboolean JNICALL Java_br_ufu_facom_network_dlontology_FinSocket_setPromiscousMode
-  (JNIEnv *, jobject, jint);
+  (JNIEnv *, jobject, jstring, jint);
+
+/*
+ * Class:     br_ufu_facom_network_dlontology_FinSocket
+ * Method:    getNetIfs
+ * Signature: ()Ljava/util/Map;
+ */
+JNIEXPORT jobject JNICALL Java_br_ufu_facom_network_dlontology_FinSocket_getNetIfs
+  (JNIEnv *, jobject);
 
 #ifdef __cplusplus
 }

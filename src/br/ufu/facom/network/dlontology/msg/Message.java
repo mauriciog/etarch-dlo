@@ -4,16 +4,19 @@ public class Message {
 	private String label;
 	private String source;
 	private String destination;
-	private String payload;
+	private byte[] payload;
 	
-	public Message(String source, String destination,String payload){
+	public Message(String source, String destination,byte[] payload){
 		this.label = "M"+((int)(Math.random()*10000));
 		this.source = source;
 		this.destination = destination;
 		this.payload = payload;
 	}
+	
+	
+	
 
-	public Message(String label, String source, String destination,String payload) {
+	public Message(String label, String source, String destination,byte[] payload) {
 		this(source,destination,payload);
 		this.label = label;
 	}
@@ -42,11 +45,11 @@ public class Message {
 		this.destination = destination;
 	}
 
-	public String getPayload() {
+	public byte[] getPayload() {
 		return payload;
 	}
 
-	public void setPayload(String payload) {
+	public void setPayload(byte[] payload) {
 		this.payload = payload;
 	}
 }

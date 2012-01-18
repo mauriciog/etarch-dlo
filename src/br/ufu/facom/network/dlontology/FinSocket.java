@@ -1,8 +1,7 @@
 package br.ufu.facom.network.dlontology;
 import java.util.ArrayList;
 import java.util.List;
-
-import sun.java2d.loops.CustomComponent;
+import java.util.Map;
 
 import br.ufu.facom.network.dlontology.msg.CustomParser;
 import br.ufu.facom.network.dlontology.msg.Message;
@@ -19,99 +18,137 @@ public class FinSocket {
 	private static final int MAX_FRAME_SIZE=1500;
 
 	//Functional
-	private int sock;
-	private boolean promisc;
+	private int sock = -1;
+	private boolean promisc = false;
 
 	//Non-Function
 	private boolean registered;
 	private String title;
 	private List<String> workspaces;
 
+	private int ifIndex = -1;
+	private String ifName = null;
+	
 	//Parser
 	private static OWLParser parser = new CustomParser();
-	
-	private FinSocket(){
-		this.sock = finOpen();
-		this.workspaces = new ArrayList<String>();
-	}
 
 	//Métodos nativos
 	private native int finOpen();
 
 	private native boolean finClose(int sock);
 
-	private native boolean finWrite(int sock, byte[] data, int offset, int len);
+	private native boolean finWrite(int ifIndex, int sock, byte[] data, int offset, int len);
 
 	private native int finRead(int sock, byte[] data, int offset, int len);
 
-	private native boolean setPromiscousMode(int sock);
+	private native boolean setPromiscousMode(String ifName, int sock);
+	
+	private native Map<Integer,String> getNetIfs();
 
     //Interface
 	public boolean close(){
 		return finClose(sock);
 	}
 
-	public static FinSocket open(){
-		return new FinSocket();
+	public boolean open(){
+		this.sock = finOpen();
+		this.workspaces = new ArrayList<String>();
+		
+		Map<Integer,String> ifs = getNetIfs();
+		for(Integer index : ifs.keySet()){
+			String name = ifs.get(index); 
+			if(!name.startsWith("lo")){
+				ifIndex = index;
+				ifName = name; 
+			}
+		}
+		
+		return isOpenned();
 	}
 	
-	public boolean write(String destin, String msg){
+	private boolean isOpenned() {
+		return this.sock >= 0 && ifIndex >=0;  
+	}
+
+	public boolean write(String destin, byte[] msg){
 		return write(new Message(this.title,destin,msg));
 	}
 	
 	public boolean write(Message message){
-		String msgOWL = parser.parse(message);
-		
-		debug("Sending message...");
-
-		byte bytes[] = 	msgOWL.getBytes();
-
-		return finWrite(sock, bytes, 0, bytes.length);
+		if(isOpenned()){
+			debug("Sending message... "+message.getLabel());
+	
+			byte bytes[] = parser.parse(message);
+			
+			int offset = 0;
+			boolean res = false;
+			while(offset < bytes.length){
+				
+				int len = Math.min(bytes.length - offset, MAX_FRAME_SIZE);
+				
+				res |= finWrite(ifIndex, sock, bytes, offset, len);
+				
+				offset += len;
+			}
+			
+			return res;
+		}else{
+			throw new RuntimeException("FinSocket não aberto!");
+		}
 	}
 
 
 	public Message read(){
-		if(!promisc)
-			if(!setPromiscousMode(sock)){
-				System.err.println("Não foi possível colocar a interface em modo promíscuo.");
-				return null;
-			}else
-				promisc = true;
-
-		
-		byte bytes[] = new byte[MAX_FRAME_SIZE];
-		Message msgObj = null;
-		int offset = 0;
+		if(isOpenned()){
+			if(!promisc)
+				if(!setPromiscousMode(ifName,sock)){
+					System.err.println("Não foi possível colocar a interface em modo promíscuo.");
+					return null;
+				}else
+					promisc = true;
 	
-		while(true){		
 			
-			offset += finRead(sock,bytes,offset,MAX_FRAME_SIZE-offset);
-
-			String msg = new String(bytes,0,offset);
+			byte bytes[] = new byte[1500000];
+			Message msgObj = null;
+			int offset = 0;
 		
-			if(msg.startsWith("<Message")){
-				if(msg.endsWith("</Message>")){ // Message Complete
-					msgObj = parser.parseMessage(msg);
-					
-					if(msgObj != null && workspaces.contains(msgObj.getDestination())){
-						debug("Receiving Message... Destin.:"+msgObj.getDestination());
-						return msgObj;
+			while(true){		
+				
+				offset += finRead(sock,bytes,offset,MAX_FRAME_SIZE);
+	
+				if(parser.validStartMessage(bytes)){
+					if(parser.validEndMessage(bytes,offset)){ // Message Complete
+						msgObj = parser.parseMessage(bytes);
+						
+						if(msgObj != null && workspaces.contains(msgObj.getDestination())){
+							debug("Receiving Message... Destin.:"+msgObj.getDestination());
+							return msgObj;
+						}else{
+							if(msgObj == null)
+								debug("Parse Fail!");
+							else
+								debug("Workspace fail : " + msgObj.getDestination());
+							msgObj=null;
+							offset = 0;
+						}
 					}else{
-						msgObj=null;
-						offset = 0;
+						//System.out.println("Ending fail");
 					}
+				}else{ // Não é uma mensagem FinLan
+					debug("Non-Finlan message!");
+					offset = 0;
 				}
-			}else // Não é uma mensagem FinLan
-				offset = 0;
+			}
+		}else{
+			throw new RuntimeException("FinSocket não aberto!");
 		}
-
 	}
 	
 	//DTS Interaction
 	public boolean register(String title){
 		String msg = "<Subscriber rdf:about=\"#Register_"+title+"\"><rdf:type rdf:resource=\"http://www.w3.org/2002/07/owl#Thing\"/><Entity rdf:resource=\"#"+title+"\"/></Subscriber>";
 		
-		if(write(new Message("","DTS",msg))){
+		if(write(new Message("","DTS",msg.getBytes()))){
 			this.title = title;
 			this.registered = true;
 		
@@ -122,11 +159,11 @@ public class FinSocket {
 		}
 	}
 	
-	public boolean unregister(String title){
+	public boolean unregister(){
 		if(registered){
 			String msg = "<Unsubscriber rdf:about=\"#Unregister_"+title+"\"><rdf:type rdf:resource=\"http://www.w3.org/2002/07/owl#Thing\"/><Entity rdf:resource=\"#"+title+"\"/></Unsubscriber>";
 		
-			write(new Message("","DTS",msg));
+			write(new Message("","DTS",msg.getBytes()));
 		
 			this.title = null;
 			this.registered = false;
@@ -139,7 +176,7 @@ public class FinSocket {
 	public boolean join(String workspace){
 		String msg = "<Join rdf:about=\"#Join_"+title+"_"+workspace+"\"><rdf:type rdf:resource=\"http://www.w3.org/2002/07/owl#Thing\"/><Entity rdf:resource=\"#"+title+"\"/><Workspace rdf:resource=\"#"+workspace+"\"/></Join>";
 		
-		write("DTS",msg);
+		write("DTS",msg.getBytes());
 		
 		this.workspaces.add(workspace);
 		
@@ -150,9 +187,9 @@ public class FinSocket {
 		if(this.workspaces.contains(workspace)){
 			String msg = "<Disjoin rdf:about=\"#Disjoin_"+title+"_"+workspace+"\"><rdf:type rdf:resource=\"http://www.w3.org/2002/07/owl#Thing\"/><Entity rdf:resource=\"#"+title+"\"/><Workspace rdf:resource=\"#"+workspace+"\"/>\n</Disjoin>";
 		
-			write("DTS",msg);
+			write("DTS",msg.getBytes());
 		
-			this.workspaces.add(workspace);
+			this.workspaces.remove(workspace);
 		}
 		return true;
 	}
