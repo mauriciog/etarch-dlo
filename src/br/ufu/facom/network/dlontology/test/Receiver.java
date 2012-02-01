@@ -10,7 +10,7 @@ public class Receiver {
 			try{
 				finSocket.register("Receiver");
 				finSocket.join("Trial");
-				finSocket.read();
+				System.out.println(new String(finSocket.read().getPayload()));
 			}finally{
 				finSocket.close();
 			}

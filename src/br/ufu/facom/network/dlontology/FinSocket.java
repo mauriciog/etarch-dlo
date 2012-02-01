@@ -7,7 +7,7 @@ import br.ufu.facom.network.dlontology.msg.Message;
 import br.ufu.facom.network.dlontology.msg.OWLParser;
 
 public class FinSocket {
-	
+	public static String interfaceDefault;
 	//Carrega a biblioteca libFinSocket.so
     static {  
     	System.loadLibrary("FinSocket");  
@@ -56,9 +56,12 @@ public class FinSocket {
 		for(Integer index : ifs.keySet()){
 			String name = ifs.get(index); 
 			if(!name.startsWith("lo")){
-				ifIndex = index;
-				ifName = name;
-				debug("Interface utilizada: "+ifIndex+" - "+ifName);
+				if(interfaceDefault == null || interfaceDefault.equalsIgnoreCase(name)){
+					ifIndex = index;
+					ifName = name;
+					debug("Interface utilizada: "+ifIndex+" - "+ifName);
+					break;
+				}
 			}
 		}
 		

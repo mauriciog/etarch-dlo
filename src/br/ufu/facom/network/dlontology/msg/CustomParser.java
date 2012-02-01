@@ -69,7 +69,9 @@ public class CustomParser implements OWLParser{
 			return null;
 		
 		int posInPayload = posFinDestin + "\"/><Payload rdf:string=\"".getBytes().length;
-		int posFinPayload = data.length - "\"/></Message>".getBytes().length;
+		int posFinPayload = KPM.indexOf(data,"\"/></Message>".getBytes(),posInPayload);
+		if(posFinPayload == -1)
+			return null;
 		
 		boolean fragmented = new String(Arrays.copyOfRange(data, posInFrag, posFinFrag)).equals("true");
 		String sequence = new String(Arrays.copyOfRange(data, posInSeq, posFinSeq));
